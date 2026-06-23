@@ -1,0 +1,2075 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FIXER 照片边框工具 V4.3</title>
+<style>
+:root {
+  /* 色彩 - 表面层 */
+  --bg: #0b0b0f;
+  --surface: #141418;
+  --surface-2: #1c1c22;
+  --surface-hover: #22222c;
+  --border: #2a2a35;
+  --border-strong: #3a3a48;
+
+  /* 色彩 - 强调色 */
+  --accent: #c89540;
+  --accent-hover: #d4a050;
+  --accent-bg: rgba(200,149,64,0.08);
+  --accent-glow: rgba(200,149,64,0.15);
+
+  /* 色彩 - 文字 */
+  --text: #e2e2e8;
+  --text-2: #9a9aad;
+  --text-3: #666680;
+
+  /* 字体 */
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+
+  /* 圆角 */
+  --radius: 8px;
+  --radius-sm: 6px;
+  --radius-lg: 10px;
+
+  /* 间距 */
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-lg: 16px;
+
+  /* 动效 */
+  --transition: 0.2s ease;
+  --transition-fast: 0.15s ease;
+  --transition-bounce: 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* 阴影 */
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.3);
+  --shadow-glow: 0 0 12px rgba(200,149,64,0.3);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--text);
+  background: var(--bg);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* ========== Toolbar ========== */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.toolbar .brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.toolbar .brand-icon {
+  width: 30px; height: 30px;
+  background: var(--accent);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+  box-shadow: var(--shadow-glow);
+  transition: box-shadow var(--transition);
+}
+.toolbar .brand:hover .brand-icon {
+  box-shadow: 0 0 18px rgba(200,149,64,0.45);
+}
+.toolbar .brand-name {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+.toolbar .toolbar-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+.toolbar .tool-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+.toolbar .spacer { flex: 1; }
+.toolbar .shortcut-hint {
+  font-size: 11px;
+  color: var(--text-3);
+  padding: 4px 8px;
+  background: rgba(255,255,255,0.03);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-variant-numeric: tabular-nums;
+}
+.toolbar .version-badge {
+  font-size: 10px;
+  color: var(--accent);
+  font-weight: 600;
+  background: var(--accent-bg);
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  letter-spacing: 0.5px;
+}
+
+/* ========== Main Layout ========== */
+.main {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ========== Left Panel - Controls ========== */
+.panel-left {
+  width: 340px;
+  flex-shrink: 0;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+.panel-left::-webkit-scrollbar {
+  width: 4px;
+}
+.panel-left::-webkit-scrollbar-track {
+  background: transparent;
+}
+.panel-left::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 2px;
+}
+
+.upload-zone {
+  margin: 14px;
+  padding: 28px 20px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-lg);
+  text-align: center;
+  cursor: pointer;
+  transition: border-color var(--transition), background var(--transition), box-shadow var(--transition);
+  position: relative;
+  min-height: 100px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: rgba(255,255,255,0.01);
+}
+.upload-zone:hover {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+  box-shadow: 0 0 16px rgba(200,149,64,0.08) inset;
+}
+.upload-zone.drag-over {
+  border-color: var(--accent);
+  background: var(--accent-glow);
+  box-shadow: 0 0 20px rgba(200,149,64,0.15) inset;
+}
+.upload-zone .upload-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius);
+  background: var(--accent-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+  transition: transform var(--transition-bounce), background var(--transition);
+}
+.upload-zone:hover .upload-icon {
+  transform: scale(1.08);
+  background: rgba(200,149,64,0.15);
+}
+.upload-zone .upload-icon svg {
+  width: 20px;
+  height: 20px;
+}
+.upload-zone .upload-text {
+  font-size: 12px;
+  color: var(--text-2);
+  font-weight: 500;
+}
+.upload-zone .upload-hint {
+  font-size: 10px;
+  color: var(--text-3);
+}
+.upload-zone input[type="file"] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.section {
+  border-top: 1px solid var(--border);
+  padding: 14px;
+}
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.section-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Form rows */
+.form-row {
+  margin-bottom: 12px;
+}
+.form-row:last-child { margin-bottom: 0; }
+.form-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-2);
+  margin-bottom: 5px;
+}
+.form-label .form-value {
+  font-size: 10px;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+.form-row-inline {
+  display: flex;
+  gap: 8px;
+}
+.form-row-inline > * { flex: 1; }
+
+/* Slider */
+input[type="range"] {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  background: var(--accent);
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 0 6px var(--accent-glow);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 0 10px rgba(200,149,64,0.4);
+}
+input[type="range"]:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 3px rgba(200,149,64,0.25), 0 0 6px var(--accent-glow);
+}
+input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  background: var(--accent);
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 0 6px var(--accent-glow);
+}
+
+/* Disabled slider (independent border mode) */
+.form-row.disabled {
+  opacity: 0.35;
+  pointer-events: none;
+}
+.form-row.disabled input[type="range"],
+.form-row.disabled .form-value {
+  opacity: 0.5;
+}
+
+/* Custom preset buttons */
+#customPresets .preset-btn {
+  position: relative;
+  padding-right: 22px;
+}
+#customPresets .preset-btn .del-mark {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--surface-2);
+  border: 1px solid var(--border-strong);
+  color: var(--text-3);
+  font-size: 9px;
+  line-height: 1;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+#customPresets .preset-btn .del-mark:hover {
+  background: #c44;
+  color: #fff;
+  border-color: #c44;
+}
+#customPresets .preset-btn:hover .del-mark {
+  display: flex;
+}
+
+/* Save preset modal */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition);
+}
+.modal-overlay.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+.modal-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  width: 300px;
+  box-shadow: var(--shadow-md);
+}
+.modal-box .modal-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 12px;
+}
+.modal-box input[type="text"] {
+  width: 100%;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 12px;
+  font-family: var(--font-sans);
+  padding: 8px 10px;
+  outline: none;
+  transition: border-color var(--transition);
+}
+.modal-box input[type="text"]:focus {
+  border-color: var(--accent);
+}
+.modal-box .modal-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+/* Color input */
+input[type="color"] {
+  -webkit-appearance: none;
+  width: 32px;
+  height: 28px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  cursor: pointer;
+  padding: 2px;
+}
+input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+input[type="color"]::-webkit-color-swatch {
+  border-radius: 3px;
+  border: none;
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 7px 14px;
+  border-radius: var(--radius);
+  font-size: 12px;
+  font-weight: 600;
+  font-family: var(--font-sans);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  cursor: pointer;
+  transition: all var(--transition);
+  white-space: nowrap;
+}
+.btn:hover {
+  border-color: var(--text-3);
+  background: var(--surface-hover);
+}
+.btn-accent {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.btn-accent:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+.btn-outline {
+  background: transparent;
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.btn-outline:hover {
+  background: var(--accent-glow);
+}
+.btn-sm {
+  padding: 4px 10px;
+  font-size: 11px;
+}
+.btn-full {
+  width: 100%;
+  justify-content: center;
+}
+
+/* Preset buttons — base */
+.presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+.preset-btn {
+  padding: 5px 11px;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: var(--font-sans);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: all var(--transition);
+  white-space: nowrap;
+}
+.preset-btn:hover {
+  border-color: var(--border-strong);
+  color: var(--text);
+  background: rgba(255,255,255,0.03);
+}
+.preset-btn.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-bg);
+}
+.preset-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* 预设风格 — pill 型（更圆润、更突出） */
+#presets .preset-btn {
+  border-radius: 20px;
+  padding: 5px 13px;
+}
+#presets .preset-btn.active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+/* 格式选择 — segment 型（紧凑方形） */
+#exportSection [data-format] {
+  border-radius: var(--radius-sm);
+  flex: 1;
+  text-align: center;
+}
+
+/* 分辨率选择 — chip 型（更小、更轻） */
+#exportSection [data-res] {
+  border-radius: var(--radius-sm);
+  padding: 4px 10px;
+  font-size: 10px;
+  letter-spacing: 0.5px;
+}
+
+/* ========== Right Panel - Preview ========== */
+.panel-right {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface);
+  padding: 24px;
+  overflow: auto;
+  position: relative;
+}
+.panel-right::-webkit-scrollbar {
+  width: 4px; height: 4px;
+}
+.panel-right::-webkit-scrollbar-track { background: transparent; }
+.panel-right::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 2px;
+}
+
+.preview-empty {
+  text-align: center;
+  color: var(--text-3);
+}
+.preview-empty .empty-icon {
+  font-size: 48px;
+  opacity: 0.2;
+  display: block;
+  margin-bottom: 12px;
+}
+.preview-empty .empty-text {
+  font-size: 13px;
+  color: var(--text-3);
+}
+
+.preview-canvas-wrap {
+  position: relative;
+  display: inline-block;
+}
+.preview-canvas-wrap canvas {
+  display: block;
+  max-width: calc(100vw - 420px);
+  max-height: calc(100vh - 120px);
+}
+.preview-info {
+  display: none;
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  font-size: 9px;
+  color: var(--text-3);
+  background: rgba(0,0,0,0.7);
+  padding: 2px 6px;
+  border-radius: 3px;
+  pointer-events: none;
+}
+
+/* ========== Bottom Bar ========== */
+.bottombar {
+  display: flex;
+  align-items: center;
+  padding: 10px 20px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.bottombar .info-text {
+  font-size: 11px;
+  color: var(--text-3);
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.bottombar .info-text .info-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.bottombar .info-text .info-val {
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+.bottombar .info-text .info-val--accent {
+  color: var(--accent);
+}
+.bottombar .info-text .info-sep {
+  width: 1px;
+  height: 12px;
+  background: var(--border);
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+/* ========== Drop shadow toggle ========== */
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+}
+.toggle-row .toggle-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+.toggle {
+  width: 36px;
+  height: 20px;
+  border-radius: 20px;
+  background: var(--border-strong);
+  cursor: pointer;
+  position: relative;
+  transition: background var(--transition);
+  flex-shrink: 0;
+}
+.toggle.on {
+  background: var(--accent);
+}
+.toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.toggle::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  transition: transform var(--transition-bounce);
+}
+.toggle.on::after {
+  transform: translateX(16px);
+}
+
+/* ========== Toast ========== */
+.toast {
+  position: fixed;
+  bottom: 60px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--surface-2);
+  color: var(--text);
+  padding: 8px 18px;
+  border-radius: var(--radius);
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.3s ease;
+  z-index: 1000;
+}
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ========== Responsive — Mobile Bottom Drawer ========== */
+
+/* Mobile trigger button (hidden on desktop) */
+.mobile-drawer-trigger {
+  display: none;
+}
+.mobile-drawer-overlay {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  /* --- Layout: full-screen preview, controls in bottom drawer --- */
+  .main {
+    flex-direction: column;
+  }
+  .panel-left {
+    width: 100%;
+    height: auto;
+    flex-shrink: 0;
+    border-right: none;
+    border-top: 1px solid var(--border);
+    /* Move to bottom drawer */
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    max-height: 75vh;
+    background: var(--surface);
+    z-index: 100;
+    transform: translateY(calc(100% - 0px));
+    transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+    overflow-y: auto;
+    border-radius: 16px 16px 0 0;
+    border-top: none;
+    box-shadow: 0 -8px 32px rgba(0,0,0,0.5);
+  }
+  .panel-left.drawer-open {
+    transform: translateY(0);
+  }
+  .panel-right {
+    flex: 1;
+    width: 100%;
+    padding: 12px;
+    /* Leave room for trigger button at bottom */
+    padding-bottom: 64px;
+  }
+  .preview-canvas-wrap canvas {
+    max-width: calc(100vw - 24px);
+    max-height: calc(100vh - 140px);
+  }
+
+  /* --- Drawer handle --- */
+  .drawer-handle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 0 4px;
+    cursor: grab;
+    position: sticky;
+    top: 0;
+    background: var(--surface);
+    border-radius: 16px 16px 0 0;
+    z-index: 10;
+  }
+  .drawer-handle::before {
+    content: '';
+    width: 36px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--border-strong);
+  }
+  .drawer-handle:active { cursor: grabbing; }
+
+  /* Hide handle on desktop */
+  .drawer-handle { display: none; }
+  @media (max-width: 768px) {
+    .drawer-handle { display: flex; }
+  }
+
+  /* --- Overlay when drawer is open --- */
+  .mobile-drawer-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 99;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  .mobile-drawer-overlay.show {
+    display: block;
+    opacity: 1;
+  }
+
+  /* --- Trigger button --- */
+  .mobile-drawer-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    position: fixed;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 10px 28px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 24px;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: var(--font-sans);
+    cursor: pointer;
+    z-index: 50;
+    box-shadow: 0 4px 16px rgba(200,149,64,0.4);
+    transition: all var(--transition);
+    white-space: nowrap;
+  }
+  .mobile-drawer-trigger:active {
+    transform: translateX(-50%) scale(0.95);
+  }
+  .mobile-drawer-trigger.hidden {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(-50%) translateY(20px);
+  }
+
+  /* --- Toolbar adjustments --- */
+  .toolbar { padding: 10px 14px; gap: 8px; }
+  .toolbar .shortcut-hint { display: none; }
+
+  /* --- Bottombar adjustments --- */
+  .bottombar { padding: 8px 14px; }
+  .bottombar .info-text { gap: 8px; font-size: 10px; }
+
+  /* --- Upload zone in drawer --- */
+  .upload-zone {
+    margin: 14px 14px 10px;
+    padding: 20px 16px;
+    min-height: 80px;
+  }
+
+  /* --- Modal adjustments --- */
+  .modal-box { width: calc(100vw - 32px); max-width: 300px; }
+
+  /* Hide the top upload zone when image is loaded (use trigger instead) */
+  .panel-left:not(.drawer-open) .upload-zone {
+    /* upload zone still accessible in drawer */
+  }
+}
+
+/* ========== Reduced motion ========== */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
+</style>
+</head>
+<body>
+
+<!-- ========== Toolbar ========== -->
+<div class="toolbar">
+  <div class="brand">
+    <div class="brand-icon">F</div>
+    <span class="brand-name">FIXER</span>
+  </div>
+  <div class="toolbar-divider"></div>
+  <span class="tool-title">照片边框工具</span>
+  <div class="spacer"></div>
+  <span class="shortcut-hint">⌘S 导出</span>
+  <span class="version-badge">V4.3</span>
+</div>
+
+<!-- ========== Main ========== -->
+<!-- Mobile drawer overlay -->
+<div class="mobile-drawer-overlay" id="drawerOverlay"></div>
+<!-- Mobile trigger button -->
+<button class="mobile-drawer-trigger" id="drawerTrigger" onclick="toggleDrawer()">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+  调整边框设置
+</button>
+
+<div class="main">
+  <!-- Left Panel -->
+  <div class="panel-left" id="panelLeft">
+    <!-- Drawer handle (mobile only) -->
+    <div class="drawer-handle" id="drawerHandle" onclick="toggleDrawer()"></div>
+    <!-- Upload Zone -->
+    <div class="upload-zone" id="uploadZone" role="button" tabindex="0" aria-label="上传图片，拖拽或点击选择文件">
+      <span class="upload-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="17 8 12 3 7 8"/>
+          <line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+      </span>
+      <span class="upload-text">拖拽图片到此处</span>
+      <span class="upload-hint">或点击选择文件 · 支持 JPG / PNG / WebP</span>
+      <input type="file" id="fileInput" accept="image/jpeg,image/png,image/webp" aria-label="选择图片文件">
+    </div>
+
+    <!-- Border Settings -->
+    <div class="section" id="settingsSection" style="display:none;">
+      <div class="section-header">
+        <span class="section-title">边框设置</span>
+      </div>
+
+      <!-- Presets -->
+      <div class="form-row">
+        <div class="form-label">预设风格</div>
+        <div class="presets" id="presets">
+          <button class="preset-btn active" data-preset="classic">经典装裱</button>
+          <button class="preset-btn" data-preset="minimal-white">极简白框</button>
+          <button class="preset-btn" data-preset="reverse">反转装裱</button>
+          <button class="preset-btn" data-preset="polaroid">拍立得</button>
+        </div>
+      </div>
+
+      <!-- Outer Border Width -->
+      <div class="form-row" id="outerWidthRow">
+        <div class="form-label">
+          <span>外层边框</span>
+          <span class="form-value" id="outerWidthVal">60px</span>
+        </div>
+        <input type="range" id="outerWidth" min="0" max="500" value="60" step="1">
+        <label class="toggle-row" style="margin-top:8px;padding:0;">
+          <span class="form-value" style="font-size:10px;">独立调整上下/左右</span>
+          <div class="toggle" id="independentBorderToggle" role="switch" tabindex="0" aria-checked="false" aria-label="独立边框模式" onclick="toggleIndependentBorder()"></div>
+        </label>
+      </div>
+      <!-- Independent Border Controls (hidden by default) -->
+      <div class="form-row" id="independentBorderControls" style="display:none;">
+        <div class="form-label">
+          <span>上下边框</span>
+          <span class="form-value" id="outerWidthVVal">60px</span>
+        </div>
+        <input type="range" id="outerWidthV" min="0" max="500" value="60" step="1">
+        <div class="form-label" style="margin-top:10px;">
+          <span>左右边框</span>
+          <span class="form-value" id="outerWidthHVal">60px</span>
+        </div>
+        <input type="range" id="outerWidthH" min="0" max="500" value="60" step="1">
+      </div>
+      <div class="form-row">
+        <div class="form-row-inline">
+          <div>
+            <div class="form-label">颜色</div>
+            <input type="color" id="outerColor" value="#ffffff">
+          </div>
+        </div>
+      </div>
+
+      <!-- Inner Border Width -->
+      <div class="form-row">
+        <div class="form-label">
+          <span>内层衬线</span>
+          <span class="form-value" id="innerWidthVal">2px</span>
+        </div>
+        <input type="range" id="innerWidth" min="0" max="20" value="2" step="1">
+      </div>
+      <div class="form-row">
+        <div class="form-row-inline">
+          <div>
+            <div class="form-label">颜色</div>
+            <input type="color" id="innerColor" value="#111111">
+          </div>
+          <div>
+            <div class="form-label">内边距</div>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <input type="range" id="innerPadding" min="0" max="40" value="0" step="1" style="flex:1;">
+              <span class="form-value" id="innerPaddingVal" style="flex-shrink:0;">0px</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Drop Shadow -->
+      <div class="form-row">
+        <div class="form-label">
+          <span>外边框投影</span>
+          <label class="toggle-row" style="padding:0;gap:8px;">
+            <span class="form-value" style="font-size:10px;">启用</span>
+            <div class="toggle on" id="shadowToggle" role="switch" tabindex="0" aria-checked="true" aria-label="外边框投影" onclick="toggleShadow()"></div>
+          </label>
+        </div>
+      </div>
+      <div class="form-row" id="shadowControls">
+        <div class="form-label">
+          <span>不透明度</span>
+          <span class="form-value" id="shadowOpacityVal">40%</span>
+        </div>
+        <input type="range" id="shadowOpacity" min="5" max="90" value="40" step="1">
+      </div>
+      <div class="form-row">
+        <div class="form-row-inline">
+          <div>
+            <div class="form-label">模糊</div>
+            <div style="display:flex;align-items:center;gap:4px;">
+              <input type="range" id="shadowBlur" min="2" max="60" value="20" step="1" style="flex:1;">
+              <span class="form-value" id="shadowBlurVal" style="flex-shrink:0;">20px</span>
+            </div>
+          </div>
+          <div>
+            <div class="form-label">偏移</div>
+            <div style="display:flex;align-items:center;gap:4px;">
+              <input type="range" id="shadowOffset" min="0" max="30" value="6" step="1" style="flex:1;">
+              <span class="form-value" id="shadowOffsetVal" style="flex-shrink:0;">6px</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Inner Shadow (image on border) -->
+      <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:4px;">
+        <div class="form-row">
+          <div class="form-label">
+            <span>图片投影</span>
+            <label class="toggle-row" style="padding:0;gap:8px;">
+              <span class="form-value" style="font-size:10px;">启用</span>
+              <div class="toggle on" id="innerShadowToggle" role="switch" tabindex="0" aria-checked="true" aria-label="图片投影" onclick="toggleInnerShadow()"></div>
+            </label>
+          </div>
+        </div>
+        <div class="form-row" id="innerShadowControls">
+          <div class="form-label">
+            <span>不透明度</span>
+            <span class="form-value" id="innerShadowOpacityVal">40%</span>
+          </div>
+          <input type="range" id="innerShadowOpacity" min="5" max="90" value="40" step="1">
+        </div>
+        <div class="form-row">
+          <div class="form-row-inline">
+            <div>
+              <div class="form-label">模糊</div>
+              <div style="display:flex;align-items:center;gap:4px;">
+                <input type="range" id="innerShadowBlur" min="2" max="50" value="15" step="1" style="flex:1;">
+                <span class="form-value" id="innerShadowBlurVal" style="flex-shrink:0;">15px</span>
+              </div>
+            </div>
+            <div>
+              <div class="form-label">距离</div>
+              <div style="display:flex;align-items:center;gap:4px;">
+                <input type="range" id="innerShadowDist" min="0" max="30" value="10" step="1" style="flex:1;">
+                <span class="form-value" id="innerShadowDistVal" style="flex-shrink:0;">10px</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-label">
+            <span>角度</span>
+            <span class="form-value" id="innerShadowAngleVal">135°</span>
+          </div>
+          <input type="range" id="innerShadowAngle" min="0" max="360" value="135" step="1">
+        </div>
+      </div>
+
+      <!-- Custom Presets -->
+      <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:4px;">
+        <div class="form-row">
+          <div class="form-label">
+            <span>我的预设</span>
+            <label class="toggle-row" style="padding:0;gap:8px;">
+              <span class="form-value" style="font-size:10px;">按比例适配</span>
+              <div class="toggle" id="proportionalToggle" role="switch" tabindex="0" aria-checked="false" aria-label="按比例适配" onclick="toggleProportional()"></div>
+            </label>
+          </div>
+          <div class="presets" id="customPresets" style="margin-bottom:8px;">
+            <span class="form-value" style="font-size:10px;opacity:0.5;">暂无自定义预设</span>
+          </div>
+          <button class="btn btn-outline btn-sm btn-full" id="savePresetBtn" onclick="saveCustomPreset()" style="margin-top:4px;">
+            保存当前设置
+          </button>
+        </div>
+      </div>
+
+    </div>
+    <div class="section" id="bgSection" style="display:none;">
+      <div class="section-header">
+        <span class="section-title">预览背景</span>
+      </div>
+      <div class="form-row">
+        <div class="form-label">画布背景色</div>
+        <input type="color" id="bgColor" value="#0b0b0f">
+      </div>
+    </div>
+
+    <!-- Export Section -->
+    <div class="section" id="exportSection" style="display:none;">
+      <div class="section-header">
+        <span class="section-title">导出</span>
+      </div>
+      <div class="form-row">
+        <div class="form-label">输出格式</div>
+        <div style="display:flex;gap:6px;">
+          <button class="preset-btn active" data-format="png">PNG</button>
+          <button class="preset-btn" data-format="jpeg">JPEG</button>
+          <button class="preset-btn" data-format="webp">WebP</button>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-label">
+          <span>导出分辨率</span>
+          <span class="form-value" id="resHint">按原图尺寸</span>
+        </div>
+        <div style="display:flex;gap:6px;">
+          <button class="preset-btn active" data-res="orig">原图</button>
+          <button class="preset-btn" data-res="2048">2K</button>
+          <button class="preset-btn" data-res="4096">4K</button>
+        </div>
+      </div>
+      <div class="form-row" id="qualityRow" style="display:none;">
+        <div class="form-label">
+          <span>画质</span>
+          <span class="form-value" id="qualityVal">92%</span>
+        </div>
+        <input type="range" id="quality" min="10" max="100" value="92" step="1">
+      </div>
+      <div style="display:flex;gap:8px;margin-top:6px;">
+        <button class="btn btn-accent" id="exportBtn" style="flex:1;" onclick="exportImage()">
+          导出图片
+        </button>
+        <button class="btn btn-outline btn-sm" onclick="document.getElementById('fileInput').click()">
+          更换图片
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Panel - Preview -->
+  <div class="panel-right" id="panelRight">
+    <div class="preview-empty" id="previewEmpty">
+      <span class="empty-icon">📸</span>
+      <span class="empty-text">上传一张照片开始<br>添加边框</span>
+    </div>
+    <div class="preview-canvas-wrap" id="previewWrap" style="display:none;">
+      <canvas id="previewCanvas"></canvas>
+      <span class="preview-info" id="previewInfo"></span>
+    </div>
+  </div>
+</div>
+
+<!-- ========== Bottombar ========== -->
+<div class="bottombar">
+  <span class="info-text" id="infoText">拖拽图片或点击上传区域开始</span>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Save Preset Modal -->
+<div class="modal-overlay" id="presetModal">
+  <div class="modal-box">
+    <div class="modal-title">保存预设</div>
+    <input type="text" id="presetNameInput" placeholder="输入预设名称" maxlength="20">
+    <div class="modal-actions">
+      <button class="btn btn-sm" onclick="closePresetModal()">取消</button>
+      <button class="btn btn-sm btn-accent" style="flex:1;" onclick="confirmSavePreset()">保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ========== State ==========
+const STORAGE_KEY = 'fixer_border_v16_settings';
+const CUSTOM_PRESETS_KEY = 'fixer_border_custom_presets';
+const DEFAULTS = {
+  outerWidth: 60,
+  independentBorder: false,
+  outerWidthH: 60,
+  outerWidthV: 60,
+  outerColor: '#ffffff',
+  outerRadius: 0,
+  innerWidth: 2,
+  innerColor: '#111111',
+  innerPadding: 0,
+  shadow: true,
+  shadowOpacity: 40,
+  shadowBlur: 20,
+  shadowOffset: 6,
+  innerShadow: true,
+  innerShadowOpacity: 40,
+  innerShadowBlur: 15,
+  innerShadowDist: 10,
+  innerShadowAngle: 135,
+  bgColor: '#0b0b0f',
+  format: 'png',
+  quality: 92,
+  activePreset: 'classic',
+  exportRes: 'orig',
+  proportional: false,
+};
+
+function loadSettings() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return {...DEFAULTS};
+    return {...DEFAULTS, ...JSON.parse(raw)};
+  } catch(e) { return {...DEFAULTS}; }
+}
+function saveSettings() {
+  try {
+    const lite = {};
+    Object.keys(DEFAULTS).forEach(k => { lite[k] = state[k]; });
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(lite));
+  } catch(e) {}
+}
+
+const state = {
+  image: null,
+  hasImage: false,
+  ...loadSettings(),
+};
+
+// ========== DOM ==========
+const uploadZone = document.getElementById('uploadZone');
+const fileInput = document.getElementById('fileInput');
+const settingsSection = document.getElementById('settingsSection');
+const bgSection = document.getElementById('bgSection');
+const exportSection = document.getElementById('exportSection');
+const previewEmpty = document.getElementById('previewEmpty');
+const previewWrap = document.getElementById('previewWrap');
+const previewCanvas = document.getElementById('previewCanvas');
+const previewInfo = document.getElementById('previewInfo');
+const infoText = document.getElementById('infoText');
+const toast = document.getElementById('toast');
+
+// Preset definitions
+const presets = {
+  classic: { outerWidth: 60, outerColor: '#ffffff', outerRadius: 0, innerWidth: 2, innerColor: '#111111', innerPadding: 0 },
+  'minimal-white': { outerWidth: 40, outerColor: '#ffffff', outerRadius: 0, innerWidth: 0, innerColor: '#000000', innerPadding: 0 },
+  reverse: { outerWidth: 40, outerColor: '#111111', outerRadius: 0, innerWidth: 2, innerColor: '#ffffff', innerPadding: 0 },
+  polaroid: { outerWidth: 80, outerColor: '#fafafa', outerRadius: 0, innerWidth: 0, innerColor: '#000000', innerPadding: 0 },
+};
+
+// ========== File Upload ==========
+uploadZone.addEventListener('click', (e) => {
+  // Avoid double-triggering: fileInput is positioned absolute covering the zone,
+  // so clicks directly on the fileInput or its parent should not re-trigger
+  if (e.target === fileInput) return;
+  fileInput.click();
+});
+// 键盘支持：Enter/Space 触发上传
+uploadZone.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInput.click(); }
+});
+fileInput.addEventListener('click', (e) => {
+  // Prevent click from bubbling up to uploadZone (avoids double file dialog)
+  e.stopPropagation();
+});
+fileInput.addEventListener('change', (e) => {
+  if (e.target.files.length > 0) loadImage(e.target.files[0]);
+});
+
+// Drag & Drop
+uploadZone.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  uploadZone.classList.add('drag-over');
+});
+uploadZone.addEventListener('dragleave', () => {
+  uploadZone.classList.remove('drag-over');
+});
+uploadZone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  uploadZone.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) {
+    loadImage(file);
+  }
+});
+
+// Also allow dropping on the preview area for re-upload
+const panelRight = document.getElementById('panelRight');
+panelRight.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  uploadZone.classList.add('drag-over');
+});
+panelRight.addEventListener('dragleave', () => {
+  uploadZone.classList.remove('drag-over');
+});
+panelRight.addEventListener('drop', (e) => {
+  e.preventDefault();
+  uploadZone.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) {
+    loadImage(file);
+  }
+});
+
+function loadImage(file) {
+  if (!file || !file.type.startsWith('image/')) { showToast('请选择图片文件'); return; }
+  if (file.size > 30 * 1024 * 1024) { showToast('图片过大（>30MB），可能影响性能'); }
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const img = new Image();
+    img.onload = () => {
+      // 超大图缩小，避免 canvas 超出浏览器限制
+      const MAX_DIM = 8000;
+      let nw = img.naturalWidth, nh = img.naturalHeight;
+      if (nw > MAX_DIM || nh > MAX_DIM) {
+        const scale = MAX_DIM / Math.max(nw, nh);
+        const tc = document.createElement('canvas');
+        tc.width = Math.round(nw * scale);
+        tc.height = Math.round(nh * scale);
+        tc.getContext('2d').drawImage(img, 0, 0, tc.width, tc.height);
+        const small = new Image();
+        small.onload = () => {
+          state.image = small;
+          state.hasImage = true;
+          showUI();
+          render();
+        };
+        small.src = tc.toDataURL('image/jpeg', 0.92);
+        return;
+      }
+      state.image = img;
+      state.hasImage = true;
+      showUI();
+      render();
+    };
+    img.onerror = () => { showToast('图片加载失败'); };
+    img.src = e.target.result;
+  };
+  reader.onerror = () => { showToast('文件读取失败'); };
+  reader.readAsDataURL(file);
+}
+
+function showUI() {
+  uploadZone.style.display = 'none';
+  settingsSection.style.display = '';
+  bgSection.style.display = '';
+  exportSection.style.display = '';
+  previewEmpty.style.display = 'none';
+  previewWrap.style.display = '';
+  renderCustomPresets();
+}
+
+// ========== Render ==========
+function render() {
+  if (!state.image) return;
+
+  const img = state.image;
+  // 支持独立上下/左右边框：未开启时 H/V 都等于 outerWidth
+  const owH = state.independentBorder ? state.outerWidthH : state.outerWidth;
+  const owV = state.independentBorder ? state.outerWidthV : state.outerWidth;
+  const iw = state.innerWidth;
+  const ip = state.innerPadding;
+  const or = state.outerRadius;
+  const totalPadH = owH + iw + ip;  // 左右总边距
+  const totalPadV = owV + iw + ip;  // 上下总边距
+
+  // Composition size (border + image, no shadow)
+  const cw = img.width + totalPadH * 2;
+  const ch = img.height + totalPadV * 2;
+
+  // Shadow padding
+  const shadowPad = state.shadow
+    ? Math.ceil(state.shadowBlur + Math.abs(state.shadowOffset) + 6)
+    : 0;
+
+  // Total canvas size
+  const tcw = cw + shadowPad * 2;
+  const tch = ch + shadowPad * 2;
+
+  previewCanvas.width = tcw;
+  previewCanvas.height = tch;
+  const ctx = previewCanvas.getContext('2d');
+
+  // Fill canvas background (transparent for PNG, or bg color for visual)
+  ctx.clearRect(0, 0, tcw, tch);
+
+  // Offset where the composition is drawn
+  const ox = shadowPad + state.shadowOffset;
+  const oy = shadowPad + state.shadowOffset;
+
+  // 圆角参数：不对称模式下取上下/左右平均值，保持视觉一致
+  const cornerR = or + (totalPadH + totalPadV) / 2;
+
+  // --- Shadow pass: draw the outer shape with shadow ---
+  if (state.shadow) {
+    ctx.save();
+    ctx.shadowColor = `rgba(0,0,0,${state.shadowOpacity / 100})`;
+    ctx.shadowBlur = state.shadowBlur;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
+
+    // Draw a rect matching the outer border shape to cast the shadow
+    ctx.fillStyle = state.outerColor;
+    if (or > 0) {
+      roundRect(ctx, ox, oy, cw, ch, cornerR);
+      ctx.fill();
+    } else {
+      ctx.fillRect(ox, oy, cw, ch);
+    }
+    ctx.restore();
+  }
+
+  // --- Main composition at (ox, oy) ---
+  // Outer border
+  if (owH > 0 || owV > 0) {
+    ctx.fillStyle = state.outerColor;
+    if (or > 0) {
+      roundRect(ctx, ox, oy, cw, ch, cornerR);
+      ctx.fill();
+    } else {
+      ctx.fillRect(ox, oy, cw, ch);
+    }
+  }
+
+  // Image position
+  const imgX = ox + totalPadH;
+  const imgY = oy + totalPadV;
+  const imgW = img.width;
+  const imgH = img.height;
+
+  // Inner border (UNDER the image — drawn before image so it doesn't cover it)
+  if (iw > 0) {
+    ctx.fillStyle = state.innerColor;
+    const ix = ox + owH, iy = oy + owV, iw2 = cw - owH * 2, ih2 = ch - owV * 2;
+    if (or > 0) {
+      roundRect(ctx, ix, iy, iw2, ih2, or + ip + iw);
+      ctx.fill();
+    } else {
+      ctx.fillRect(ix, iy, iw2, ih2);
+    }
+  }
+
+  // --- Inner shadow: image casts shadow on the white border ---
+  if (state.innerShadow) {
+    const angRad = state.innerShadowAngle * Math.PI / 180;
+    const isx = Math.cos(angRad) * state.innerShadowDist;
+    const isy = Math.sin(angRad) * state.innerShadowDist;
+
+    // First pass: draw image WITH shadow — shadow extends onto white border
+    // (no clip so shadow can spill beyond image edges)
+    ctx.save();
+    ctx.shadowColor = `rgba(0,0,0,${state.innerShadowOpacity / 100})`;
+    ctx.shadowBlur = state.innerShadowBlur;
+    ctx.shadowOffsetX = isx;
+    ctx.shadowOffsetY = isy;
+    ctx.drawImage(img, imgX, imgY, imgW, imgH);
+    ctx.restore();
+
+    // Second pass: draw clean image ON TOP (covers shadow within image area)
+    ctx.save();
+    if (or > 0) {
+      roundRect(ctx, imgX, imgY, imgW, imgH, or);
+      ctx.clip();
+    }
+    ctx.drawImage(img, imgX, imgY, imgW, imgH);
+    ctx.restore();
+  } else {
+    // No inner shadow: draw image normally
+    ctx.save();
+    if (or > 0) {
+      roundRect(ctx, imgX, imgY, imgW, imgH, or);
+      ctx.clip();
+    }
+    ctx.drawImage(img, imgX, imgY, imgW, imgH);
+    ctx.restore();
+  }
+
+  // Update info
+  previewInfo.textContent = `${tcw} × ${tch} px`;
+  const borderDisplay = state.independentBorder ? `${totalPadV}/${totalPadH}px` : `${totalPadH}px`;
+  infoText.innerHTML = `<span class="info-item">原图 <span class="info-val">${img.width}×${img.height}</span></span><span class="info-sep"></span><span class="info-item">输出 <span class="info-val info-val--accent">${tcw}×${tch}</span></span><span class="info-sep"></span><span class="info-item">边框 <span class="info-val">${borderDisplay}</span></span>`;
+
+  // 自动检测当前参数是否匹配某个预设，不匹配则取消高亮
+  checkPresetMatch();
+}
+
+// 预设匹配检测：对比当前边框参数与所有预设，匹配的高亮，都不匹配则全部取消
+function checkPresetMatch() {
+  const keys = ['outerWidth', 'outerColor', 'innerWidth', 'innerColor', 'innerPadding'];
+  let matched = null;
+  // 独立模式下必然不匹配任何预设（预设都是统一边框）
+  if (!state.independentBorder) {
+    for (const [k, p] of Object.entries(presets)) {
+      if (keys.every(key => state[key] === p[key])) { matched = k; break; }
+    }
+  }
+  state.activePreset = matched;
+  document.querySelectorAll('#presets .preset-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.preset === matched);
+  });
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+// ========== Controls Binding ==========
+function bindRange(id, key, valId, suffix, onChange) {
+  const el = document.getElementById(id);
+  el.addEventListener('input', () => {
+    state[key] = parseInt(el.value);
+    if (valId) document.getElementById(valId).textContent = el.value + (suffix || 'px');
+    if (onChange) onChange();
+    saveSettings();
+    render();
+  });
+}
+
+// ========== Click-to-edit numeric values ==========
+// 点击数值标签可直接键入精确数值，回车确认 / 失焦确认 / Esc 取消
+function makeValueEditable(valId, sliderId, suffix) {
+  const valEl = document.getElementById(valId);
+  const slider = document.getElementById(sliderId);
+  if (!valEl || !slider) return;
+  valEl.style.cursor = 'text';
+  valEl.title = '点击输入数值';
+  valEl.addEventListener('click', () => {
+    if (valEl.querySelector('input')) return; // 已在编辑中
+    const cur = state[sliderId];
+    const input = document.createElement('input');
+    input.type = 'number';
+    input.value = cur;
+    input.min = slider.min;
+    input.max = slider.max;
+    input.style.cssText = 'width:54px;font-size:10px;background:var(--surface-2);border:1px solid var(--accent);color:var(--text);border-radius:3px;padding:1px 4px;text-align:right;font-variant-numeric:tabular-nums;font-family:inherit;';
+    valEl.textContent = '';
+    valEl.appendChild(input);
+    input.focus();
+    input.select();
+    const commit = () => {
+      let v = parseInt(input.value);
+      if (isNaN(v)) { valEl.textContent = cur + (suffix || 'px'); return; }
+      // 限制在滑块范围内
+      v = Math.max(parseInt(slider.min), Math.min(parseInt(slider.max), v));
+      state[sliderId] = v;
+      slider.value = v;
+      valEl.textContent = v + (suffix || 'px');
+      saveSettings();
+      render();
+    };
+    const cancel = () => { valEl.textContent = cur + (suffix || 'px'); };
+    input.addEventListener('blur', commit);
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+      else if (e.key === 'Escape') { e.preventDefault(); valEl.textContent = cur + (suffix || 'px'); }
+    });
+  });
+}
+
+bindRange('outerWidth', 'outerWidth', 'outerWidthVal', 'px');
+bindRange('outerWidthH', 'outerWidthH', 'outerWidthHVal', 'px');
+bindRange('outerWidthV', 'outerWidthV', 'outerWidthVVal', 'px');
+bindRange('innerWidth', 'innerWidth', 'innerWidthVal', 'px');
+bindRange('innerPadding', 'innerPadding', 'innerPaddingVal', 'px');
+
+// ========== Independent Border Toggle ==========
+function toggleIndependentBorder() {
+  state.independentBorder = !state.independentBorder;
+  // 开启时：把上下/左右同步为当前外层边框值，作为起点
+  if (state.independentBorder) {
+    state.outerWidthH = state.outerWidth;
+    state.outerWidthV = state.outerWidth;
+    document.getElementById('outerWidthH').value = state.outerWidth;
+    document.getElementById('outerWidthV').value = state.outerWidth;
+    document.getElementById('outerWidthHVal').textContent = state.outerWidth + 'px';
+    document.getElementById('outerWidthVVal').textContent = state.outerWidth + 'px';
+  }
+  const toggle = document.getElementById('independentBorderToggle');
+  toggle.classList.toggle('on', state.independentBorder);
+  toggle.setAttribute('aria-checked', state.independentBorder);
+  document.getElementById('independentBorderControls').style.display = state.independentBorder ? '' : 'none';
+  document.getElementById('outerWidthRow').classList.toggle('disabled', state.independentBorder);
+  saveSettings();
+  render();
+}
+document.getElementById('independentBorderToggle').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleIndependentBorder(); }
+});
+
+document.getElementById('outerColor').addEventListener('input', (e) => {
+  state.outerColor = e.target.value;
+  saveSettings();
+  render();
+});
+document.getElementById('innerColor').addEventListener('input', (e) => {
+  state.innerColor = e.target.value;
+  saveSettings();
+  render();
+});
+document.getElementById('bgColor').addEventListener('input', (e) => {
+  state.bgColor = e.target.value;
+  panelRight.style.background = e.target.value;
+  saveSettings();
+});
+
+// ========== Shadow Controls ==========
+function toggleShadow() {
+  state.shadow = !state.shadow;
+  const toggle = document.getElementById('shadowToggle');
+  toggle.classList.toggle('on', state.shadow);
+  toggle.setAttribute('aria-checked', state.shadow);
+  const ctrls = document.getElementById('shadowControls');
+  ctrls.style.display = state.shadow ? '' : 'none';
+  saveSettings();
+  render();
+}
+
+// 键盘支持：Enter/Space 触发开关
+document.getElementById('shadowToggle').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleShadow(); }
+});
+
+// Bind shadow sliders
+bindRange('shadowOpacity', 'shadowOpacity', 'shadowOpacityVal', '%');
+bindRange('shadowBlur', 'shadowBlur', 'shadowBlurVal', 'px');
+bindRange('shadowOffset', 'shadowOffset', 'shadowOffsetVal', 'px');
+
+// ========== Inner Shadow ==========
+function toggleInnerShadow() {
+  state.innerShadow = !state.innerShadow;
+  const toggle = document.getElementById('innerShadowToggle');
+  toggle.classList.toggle('on', state.innerShadow);
+  toggle.setAttribute('aria-checked', state.innerShadow);
+  document.getElementById('innerShadowControls').style.display = state.innerShadow ? '' : 'none';
+  saveSettings();
+  render();
+}
+document.getElementById('innerShadowToggle').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleInnerShadow(); }
+});
+bindRange('innerShadowOpacity', 'innerShadowOpacity', 'innerShadowOpacityVal', '%');
+bindRange('innerShadowBlur', 'innerShadowBlur', 'innerShadowBlurVal', 'px');
+bindRange('innerShadowDist', 'innerShadowDist', 'innerShadowDistVal', 'px');
+document.getElementById('innerShadowAngle').addEventListener('input', (e) => {
+  state.innerShadowAngle = parseInt(e.target.value);
+  document.getElementById('innerShadowAngleVal').textContent = e.target.value + '°';
+  saveSettings();
+  render();
+});
+
+// 为所有数值标签启用点击编辑
+makeValueEditable('outerWidthVal', 'outerWidth', 'px');
+makeValueEditable('outerWidthHVal', 'outerWidthH', 'px');
+makeValueEditable('outerWidthVVal', 'outerWidthV', 'px');
+makeValueEditable('innerWidthVal', 'innerWidth', 'px');
+makeValueEditable('innerPaddingVal', 'innerPadding', 'px');
+makeValueEditable('shadowOpacityVal', 'shadowOpacity', '%');
+makeValueEditable('shadowBlurVal', 'shadowBlur', 'px');
+makeValueEditable('shadowOffsetVal', 'shadowOffset', 'px');
+makeValueEditable('innerShadowOpacityVal', 'innerShadowOpacity', '%');
+makeValueEditable('innerShadowBlurVal', 'innerShadowBlur', 'px');
+makeValueEditable('innerShadowDistVal', 'innerShadowDist', 'px');
+makeValueEditable('innerShadowAngleVal', 'innerShadowAngle', '°');
+makeValueEditable('qualityVal', 'quality', '%');
+
+// ========== Presets ==========
+document.getElementById('presets').addEventListener('click', (e) => {
+  const btn = e.target.closest('.preset-btn');
+  if (!btn) return;
+
+  const key = btn.dataset.preset;
+  const p = presets[key];
+  if (!p) return;
+
+  state.activePreset = key;
+  state.outerWidth = p.outerWidth;
+  state.outerColor = p.outerColor;
+  state.outerRadius = p.outerRadius;
+  state.innerWidth = p.innerWidth;
+  state.innerColor = p.innerColor;
+  state.innerPadding = p.innerPadding;
+  // 预设始终使用统一边框，关闭独立模式并同步 H/V
+  state.independentBorder = false;
+  state.outerWidthH = p.outerWidth;
+  state.outerWidthV = p.outerWidth;
+
+  // Update UI
+  document.getElementById('outerWidth').value = p.outerWidth;
+  document.getElementById('outerWidthVal').textContent = p.outerWidth + 'px';
+  document.getElementById('outerWidthH').value = p.outerWidth;
+  document.getElementById('outerWidthHVal').textContent = p.outerWidth + 'px';
+  document.getElementById('outerWidthV').value = p.outerWidth;
+  document.getElementById('outerWidthVVal').textContent = p.outerWidth + 'px';
+  const ibT = document.getElementById('independentBorderToggle');
+  ibT.classList.remove('on');
+  ibT.setAttribute('aria-checked', 'false');
+  document.getElementById('independentBorderControls').style.display = 'none';
+  document.getElementById('outerWidthRow').classList.remove('disabled');
+  document.getElementById('outerColor').value = p.outerColor;
+  document.getElementById('innerWidth').value = p.innerWidth;
+  document.getElementById('innerWidthVal').textContent = p.innerWidth + 'px';
+  document.getElementById('innerColor').value = p.innerColor;
+  document.getElementById('innerPadding').value = p.innerPadding;
+  document.getElementById('innerPaddingVal').textContent = p.innerPadding + 'px';
+
+  // Update active state
+  document.querySelectorAll('#presets .preset-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  saveSettings();
+  render();
+});
+
+// ========== Custom Presets ==========
+function loadCustomPresets() {
+  try {
+    const raw = localStorage.getItem(CUSTOM_PRESETS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch(e) { return []; }
+}
+function persistCustomPresets(arr) {
+  try { localStorage.setItem(CUSTOM_PRESETS_KEY, JSON.stringify(arr)); } catch(e) {}
+}
+
+function renderCustomPresets() {
+  const container = document.getElementById('customPresets');
+  const arr = loadCustomPresets();
+  if (arr.length === 0) {
+    container.innerHTML = '<span class="form-value" style="font-size:10px;opacity:0.5;">暂无自定义预设</span>';
+    return;
+  }
+  container.innerHTML = '';
+  arr.forEach((p) => {
+    const btn = document.createElement('button');
+    btn.className = 'preset-btn';
+    btn.textContent = p.name;
+    btn.dataset.cpid = p.id;
+    btn.addEventListener('click', (ev) => {
+      // 点击删除标记不触发应用
+      if (ev.target.classList.contains('del-mark')) return;
+      applyCustomPreset(p.id);
+    });
+    const del = document.createElement('span');
+    del.className = 'del-mark';
+    del.textContent = '×';
+    del.title = '删除预设';
+    del.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      deleteCustomPreset(p.id);
+    });
+    btn.appendChild(del);
+    container.appendChild(btn);
+  });
+}
+
+// 当前全部边框参数（用于保存/应用预设）
+const PRESET_PARAMS = [
+  'outerWidth','independentBorder','outerWidthH','outerWidthV',
+  'outerColor','innerWidth','innerColor','innerPadding',
+  'shadow','shadowOpacity','shadowBlur','shadowOffset',
+  'innerShadow','innerShadowOpacity','innerShadowBlur','innerShadowDist','innerShadowAngle'
+];
+
+function saveCustomPreset() {
+  if (!state.hasImage) { showToast('请先上传图片'); return; }
+  const modal = document.getElementById('presetModal');
+  const input = document.getElementById('presetNameInput');
+  modal.classList.add('show');
+  input.value = '';
+  setTimeout(() => input.focus(), 50);
+}
+
+function closePresetModal() {
+  document.getElementById('presetModal').classList.remove('show');
+}
+
+function confirmSavePreset() {
+  const name = document.getElementById('presetNameInput').value.trim();
+  if (!name) { showToast('请输入名称'); return; }
+  const arr = loadCustomPresets();
+  const preset = {
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+    name: name,
+    imgW: state.image ? state.image.width : 0,
+    imgH: state.image ? state.image.height : 0,
+  };
+  PRESET_PARAMS.forEach(k => { preset[k] = state[k]; });
+  arr.push(preset);
+  persistCustomPresets(arr);
+  renderCustomPresets();
+  closePresetModal();
+  showToast(`已保存预设「${name}」`);
+}
+
+// 回车确认
+document.getElementById('presetNameInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); confirmSavePreset(); }
+  else if (e.key === 'Escape') { e.preventDefault(); closePresetModal(); }
+});
+// 点击遮罩关闭弹窗
+document.getElementById('presetModal').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) closePresetModal();
+});
+
+function applyCustomPreset(id) {
+  const arr = loadCustomPresets();
+  const p = arr.find(x => x.id === id);
+  if (!p) return;
+
+  // 计算比例因子（按比例模式 + 有原图尺寸记录时才换算）
+  let scale = 1;
+  if (state.proportional && p.imgW > 0 && state.image) {
+    // 以图片长边作为参照
+    const refOld = Math.max(p.imgW, p.imgH);
+    const refNew = Math.max(state.image.width, state.image.height);
+    scale = refNew / refOld;
+  }
+
+  // 应用参数（px 类参数按比例换算，非 px 参数直接复制）
+  const pxKeys = ['outerWidth','outerWidthH','outerWidthV','innerWidth','innerPadding','shadowBlur','shadowOffset','innerShadowBlur','innerShadowDist'];
+  const directKeys = ['independentBorder','outerColor','innerColor','shadow','shadowOpacity','innerShadow','innerShadowOpacity','innerShadowAngle'];
+
+  pxKeys.forEach(k => {
+    if (p[k] !== undefined) {
+      let v = Math.round(p[k] * scale);
+      // clamp 到滑块范围
+      const slider = document.getElementById(k);
+      if (slider) {
+        v = Math.max(parseInt(slider.min), Math.min(parseInt(slider.max), v));
+      }
+      state[k] = v;
+    }
+  });
+  directKeys.forEach(k => {
+    if (p[k] !== undefined) state[k] = p[k];
+  });
+
+  // 同步 UI
+  syncAllUIFromState();
+  // 取消内置预设高亮
+  document.querySelectorAll('#presets .preset-btn').forEach(b => b.classList.remove('active'));
+  state.activePreset = null;
+
+  if (state.proportional && scale !== 1) {
+    showToast(`已应用「${p.name}」(按比例 ${(scale*100).toFixed(0)}%)`);
+  } else {
+    showToast(`已应用「${p.name}」`);
+  }
+  saveSettings();
+  render();
+}
+
+function deleteCustomPreset(id) {
+  let arr = loadCustomPresets();
+  const p = arr.find(x => x.id === id);
+  arr = arr.filter(x => x.id !== id);
+  persistCustomPresets(arr);
+  renderCustomPresets();
+  if (p) showToast(`已删除「${p.name}」`);
+}
+
+// ========== Proportional Toggle ==========
+function toggleProportional() {
+  state.proportional = !state.proportional;
+  const toggle = document.getElementById('proportionalToggle');
+  toggle.classList.toggle('on', state.proportional);
+  toggle.setAttribute('aria-checked', state.proportional);
+  saveSettings();
+  showToast(state.proportional ? '按比例适配已开启' : '按比例适配已关闭');
+}
+document.getElementById('proportionalToggle').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleProportional(); }
+});
+
+// ========== Format Selector ==========
+// 用 [data-format] 元素精确绑定，避免和预设按钮的 .preset-btn 混淆
+document.querySelectorAll('#exportSection [data-format]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    state.format = btn.dataset.format;
+    document.querySelectorAll('#exportSection [data-format]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const qualityRow = document.getElementById('qualityRow');
+    qualityRow.style.display = (state.format === 'jpeg' || state.format === 'webp') ? '' : 'none';
+    saveSettings();
+  });
+});
+
+document.getElementById('quality').addEventListener('input', (e) => {
+  state.quality = parseInt(e.target.value);
+  document.getElementById('qualityVal').textContent = e.target.value + '%';
+  saveSettings();
+});
+
+// ========== Resolution Selector ==========
+document.querySelectorAll('#exportSection [data-res]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    state.exportRes = btn.dataset.res;
+    document.querySelectorAll('#exportSection [data-res]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const hint = document.getElementById('resHint');
+    if (hint) hint.textContent = state.exportRes === 'orig' ? '按原图尺寸' : `长边 ${state.exportRes}px`;
+    saveSettings();
+  });
+});
+
+// ========== Export ==========
+function exportImage() {
+  if (!state.hasImage) return;
+
+  const mime = state.format === 'jpeg' ? 'image/jpeg' : state.format === 'webp' ? 'image/webp' : 'image/png';
+  const ext = state.format === 'jpeg' ? 'jpg' : state.format;
+  const now = new Date();
+  const ts = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}-${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}${String(now.getSeconds()).padStart(2,'0')}`;
+  const filename = `FIXER_border_${ts}.${ext}`;
+  const q = state.quality / 100;
+
+  // —— 计算目标尺寸（支持 2K / 4K 按长边缩放）——
+  const srcW = previewCanvas.width;
+  const srcH = previewCanvas.height;
+  let targetW = srcW, targetH = srcH;
+  if (state.exportRes && state.exportRes !== 'orig') {
+    const targetLong = parseInt(state.exportRes, 10);
+    const longSide = Math.max(srcW, srcH);
+    const scale = targetLong / longSide;
+    targetW = Math.max(1, Math.round(srcW * scale));
+    targetH = Math.max(1, Math.round(srcH * scale));
+  }
+
+  // —— 创建独立的导出 canvas（不污染预览）——
+  const exportCanvas = document.createElement('canvas');
+  exportCanvas.width = targetW;
+  exportCanvas.height = targetH;
+  const ectx = exportCanvas.getContext('2d');
+  ectx.imageSmoothingEnabled = true;
+  ectx.imageSmoothingQuality = 'high';
+
+  // —— 关键修复：JPEG / WebP 不支持透明通道 ——
+  // 预览 canvas 的阴影 padding 区域是透明的，直接导出 JPEG 会变成黑边。
+  // 这里先填充白色背景，消除黑边。PNG 保持透明不受影响。
+  if (state.format === 'jpeg' || state.format === 'webp') {
+    ectx.fillStyle = '#ffffff';
+    ectx.fillRect(0, 0, targetW, targetH);
+  }
+
+  // 绘制（尺寸相同时 1:1，否则高质量缩放）
+  ectx.drawImage(previewCanvas, 0, 0, targetW, targetH);
+
+  exportCanvas.toBlob(blob => {
+    if (!blob) { showToast('导出失败'); return; }
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.download = filename;
+    link.href = url;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    showToast(`导出完成 ✓ ${targetW}×${targetH}px · ${filename}`);
+  }, mime, (state.format === 'png') ? undefined : q);
+}
+
+function showToast(msg) {
+  toast.textContent = msg;
+  toast.classList.add('show');
+  if (showToast._t) clearTimeout(showToast._t);
+  showToast._t = setTimeout(() => toast.classList.remove('show'), 2400);
+}
+
+// ========== Keyboard Shortcuts ==========
+document.addEventListener('keydown', (e) => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+    e.preventDefault();
+    exportImage();
+  }
+});
+
+// ========== Mobile Drawer ==========
+function toggleDrawer() {
+  const panel = document.getElementById('panelLeft');
+  const overlay = document.getElementById('drawerOverlay');
+  const trigger = document.getElementById('drawerTrigger');
+  const isOpen = panel.classList.toggle('drawer-open');
+  overlay.classList.toggle('show', isOpen);
+  trigger.classList.toggle('hidden', isOpen);
+}
+// 点击遮罩关闭
+document.getElementById('drawerOverlay').addEventListener('click', toggleDrawer);
+// 触摸下滑关闭（在 handle 区域）
+(function() {
+  const handle = document.getElementById('drawerHandle');
+  let startY = 0, currentY = 0, dragging = false;
+  handle.addEventListener('touchstart', (e) => {
+    startY = e.touches[0].clientY;
+    dragging = true;
+    const panel = document.getElementById('panelLeft');
+    panel.style.transition = 'none';
+  });
+  handle.addEventListener('touchmove', (e) => {
+    if (!dragging) return;
+    currentY = e.touches[0].clientY;
+    const diff = currentY - startY;
+    if (diff > 0) {
+      const panel = document.getElementById('panelLeft');
+      panel.style.transform = `translateY(${diff}px)`;
+    }
+  });
+  handle.addEventListener('touchend', () => {
+    if (!dragging) return;
+    dragging = false;
+    const panel = document.getElementById('panelLeft');
+    panel.style.transition = '';
+    panel.style.transform = '';
+    if (currentY - startY > 80) {
+      toggleDrawer();
+    }
+    startY = 0; currentY = 0;
+  });
+})();
+
+// ========== Initial ==========
+// 从已加载的 state 同步所有 UI 控件（保证刷新后界面与持久化设置一致）
+function syncAllUIFromState() {
+  // 滑块
+  const sliders = [
+    ['outerWidth','outerWidthVal','px'],
+    ['outerWidthH','outerWidthHVal','px'],
+    ['outerWidthV','outerWidthVVal','px'],
+    ['innerWidth','innerWidthVal','px'],
+    ['innerPadding','innerPaddingVal','px'],
+    ['shadowOpacity','shadowOpacityVal','%'],
+    ['shadowBlur','shadowBlurVal','px'],
+    ['shadowOffset','shadowOffsetVal','px'],
+    ['innerShadowOpacity','innerShadowOpacityVal','%'],
+    ['innerShadowBlur','innerShadowBlurVal','px'],
+    ['innerShadowDist','innerShadowDistVal','px'],
+    ['innerShadowAngle','innerShadowAngleVal','°'],
+    ['quality','qualityVal','%'],
+  ];
+  sliders.forEach(([id, valId, suf]) => {
+    const el = document.getElementById(id);
+    if (el) el.value = state[id];
+    if (valId) document.getElementById(valId).textContent = state[id] + suf;
+  });
+  // 颜色
+  document.getElementById('outerColor').value = state.outerColor;
+  document.getElementById('innerColor').value = state.innerColor;
+  document.getElementById('bgColor').value = state.bgColor;
+  // 投影开关
+  const sToggle = document.getElementById('shadowToggle');
+  sToggle.classList.toggle('on', state.shadow);
+  sToggle.setAttribute('aria-checked', state.shadow);
+  document.getElementById('shadowControls').style.display = state.shadow ? '' : 'none';
+  // 图片投影开关
+  const isToggle = document.getElementById('innerShadowToggle');
+  isToggle.classList.toggle('on', state.innerShadow);
+  isToggle.setAttribute('aria-checked', state.innerShadow);
+  document.getElementById('innerShadowControls').style.display = state.innerShadow ? '' : 'none';
+  // 独立边框开关
+  const ibToggle = document.getElementById('independentBorderToggle');
+  ibToggle.classList.toggle('on', state.independentBorder);
+  ibToggle.setAttribute('aria-checked', state.independentBorder);
+  document.getElementById('independentBorderControls').style.display = state.independentBorder ? '' : 'none';
+  document.getElementById('outerWidthRow').classList.toggle('disabled', state.independentBorder);
+  // 按比例开关
+  const pToggle = document.getElementById('proportionalToggle');
+  pToggle.classList.toggle('on', state.proportional);
+  pToggle.setAttribute('aria-checked', state.proportional);
+  // 预设
+  document.querySelectorAll('#presets .preset-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.preset === state.activePreset);
+  });
+  // 格式
+  document.querySelectorAll('#exportSection [data-format]').forEach(b => {
+    b.classList.toggle('active', b.dataset.format === state.format);
+  });
+  document.getElementById('qualityRow').style.display = (state.format === 'jpeg' || state.format === 'webp') ? '' : 'none';
+  // 分辨率
+  const resVal = state.exportRes || 'orig';
+  document.querySelectorAll('#exportSection [data-res]').forEach(b => {
+    b.classList.toggle('active', b.dataset.res === resVal);
+  });
+  const resHint = document.getElementById('resHint');
+  if (resHint) resHint.textContent = resVal === 'orig' ? '按原图尺寸' : `长边 ${resVal}px`;
+  // 背景
+  panelRight.style.background = state.bgColor;
+}
+
+syncAllUIFromState();
+renderCustomPresets();
+</script>
+</body>
+</html>

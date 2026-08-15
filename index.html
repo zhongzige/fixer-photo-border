@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FIXER 照片边框工具 V4.3</title>
+<title>FIXER 照片边框工具 V4.4</title>
 <style>
 :root {
   /* 色彩 - 表面层 */
@@ -330,7 +330,7 @@ input[type="range"]::-moz-range-thumb {
   color: var(--text-3);
   font-size: 9px;
   line-height: 1;
-  display: none;
+  display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
@@ -341,8 +341,10 @@ input[type="range"]::-moz-range-thumb {
   color: #fff;
   border-color: #c44;
 }
-#customPresets .preset-btn:hover .del-mark {
-  display: flex;
+/* 桌面（有鼠标悬停能力）：默认隐藏、悬停预设时显示 */
+@media (hover: hover) {
+  #customPresets .preset-btn .del-mark { display: none; }
+  #customPresets .preset-btn:hover .del-mark { display: flex; }
 }
 
 /* Save preset modal */
@@ -858,7 +860,7 @@ input[type="color"]::-webkit-color-swatch {
   <span class="tool-title">照片边框工具</span>
   <div class="spacer"></div>
   <span class="shortcut-hint">⌘S 导出</span>
-  <span class="version-badge">V4.3</span>
+  <span class="version-badge">V4.4</span>
 </div>
 
 <!-- ========== Main ========== -->
@@ -1160,7 +1162,6 @@ const DEFAULTS = {
   outerWidthH: 60,
   outerWidthV: 60,
   outerColor: '#ffffff',
-  outerRadius: 0,
   innerWidth: 2,
   innerColor: '#111111',
   innerPadding: 0,
@@ -1217,10 +1218,10 @@ const toast = document.getElementById('toast');
 
 // Preset definitions
 const presets = {
-  classic: { outerWidth: 60, outerColor: '#ffffff', outerRadius: 0, innerWidth: 2, innerColor: '#111111', innerPadding: 0 },
-  'minimal-white': { outerWidth: 40, outerColor: '#ffffff', outerRadius: 0, innerWidth: 0, innerColor: '#000000', innerPadding: 0 },
-  reverse: { outerWidth: 40, outerColor: '#111111', outerRadius: 0, innerWidth: 2, innerColor: '#ffffff', innerPadding: 0 },
-  polaroid: { outerWidth: 80, outerColor: '#fafafa', outerRadius: 0, innerWidth: 0, innerColor: '#000000', innerPadding: 0 },
+  classic: { outerWidth: 60, outerColor: '#ffffff', innerWidth: 2, innerColor: '#111111', innerPadding: 0 },
+  'minimal-white': { outerWidth: 40, outerColor: '#ffffff', innerWidth: 0, innerColor: '#000000', innerPadding: 0 },
+  reverse: { outerWidth: 40, outerColor: '#111111', innerWidth: 2, innerColor: '#ffffff', innerPadding: 0 },
+  polaroid: { outerWidth: 80, outerColor: '#fafafa', innerWidth: 0, innerColor: '#000000', innerPadding: 0 },
 };
 
 // ========== File Upload ==========
@@ -1335,7 +1336,6 @@ function render() {
   const owV = state.independentBorder ? state.outerWidthV : state.outerWidth;
   const iw = state.innerWidth;
   const ip = state.innerPadding;
-  const or = state.outerRadius;
   const totalPadH = owH + iw + ip;  // 左右总边距
   const totalPadV = owV + iw + ip;  // 上下总边距
 
@@ -1360,28 +1360,22 @@ function render() {
   ctx.clearRect(0, 0, tcw, tch);
 
   // Offset where the composition is drawn
-  const ox = shadowPad + state.shadowOffset;
-  const oy = shadowPad + state.shadowOffset;
-
-  // 圆角参数：不对称模式下取上下/左右平均值，保持视觉一致
-  const cornerR = or + (totalPadH + totalPadV) / 2;
+  // 主体居中（阴影自身带 offset，shadowPad 已含 offset 余量，四周留白对称）
+  const ox = shadowPad;
+  const oy = shadowPad;
 
   // --- Shadow pass: draw the outer shape with shadow ---
   if (state.shadow) {
     ctx.save();
     ctx.shadowColor = `rgba(0,0,0,${state.shadowOpacity / 100})`;
     ctx.shadowBlur = state.shadowBlur;
-    ctx.shadowOffsetX = 0;
-    ctx.shadowOffsetY = 0;
+    // 偏移真正作用在阴影上（向右下投射），而不是挪动主体位置
+    ctx.shadowOffsetX = state.shadowOffset;
+    ctx.shadowOffsetY = state.shadowOffset;
 
     // Draw a rect matching the outer border shape to cast the shadow
     ctx.fillStyle = state.outerColor;
-    if (or > 0) {
-      roundRect(ctx, ox, oy, cw, ch, cornerR);
-      ctx.fill();
-    } else {
-      ctx.fillRect(ox, oy, cw, ch);
-    }
+    ctx.fillRect(ox, oy, cw, ch);
     ctx.restore();
   }
 
@@ -1389,12 +1383,7 @@ function render() {
   // Outer border
   if (owH > 0 || owV > 0) {
     ctx.fillStyle = state.outerColor;
-    if (or > 0) {
-      roundRect(ctx, ox, oy, cw, ch, cornerR);
-      ctx.fill();
-    } else {
-      ctx.fillRect(ox, oy, cw, ch);
-    }
+    ctx.fillRect(ox, oy, cw, ch);
   }
 
   // Image position
@@ -1407,12 +1396,7 @@ function render() {
   if (iw > 0) {
     ctx.fillStyle = state.innerColor;
     const ix = ox + owH, iy = oy + owV, iw2 = cw - owH * 2, ih2 = ch - owV * 2;
-    if (or > 0) {
-      roundRect(ctx, ix, iy, iw2, ih2, or + ip + iw);
-      ctx.fill();
-    } else {
-      ctx.fillRect(ix, iy, iw2, ih2);
-    }
+    ctx.fillRect(ix, iy, iw2, ih2);
   }
 
   // --- Inner shadow: image casts shadow on the white border ---
@@ -1432,22 +1416,10 @@ function render() {
     ctx.restore();
 
     // Second pass: draw clean image ON TOP (covers shadow within image area)
-    ctx.save();
-    if (or > 0) {
-      roundRect(ctx, imgX, imgY, imgW, imgH, or);
-      ctx.clip();
-    }
     ctx.drawImage(img, imgX, imgY, imgW, imgH);
-    ctx.restore();
   } else {
     // No inner shadow: draw image normally
-    ctx.save();
-    if (or > 0) {
-      roundRect(ctx, imgX, imgY, imgW, imgH, or);
-      ctx.clip();
-    }
     ctx.drawImage(img, imgX, imgY, imgW, imgH);
-    ctx.restore();
   }
 
   // Update info
@@ -1473,20 +1445,6 @@ function checkPresetMatch() {
   document.querySelectorAll('#presets .preset-btn').forEach(b => {
     b.classList.toggle('active', b.dataset.preset === matched);
   });
-}
-
-function roundRect(ctx, x, y, w, h, r) {
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.lineTo(x + w - r, y);
-  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-  ctx.lineTo(x + w, y + h - r);
-  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-  ctx.lineTo(x + r, y + h);
-  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-  ctx.lineTo(x, y + r);
-  ctx.quadraticCurveTo(x, y, x + r, y);
-  ctx.closePath();
 }
 
 // ========== Controls Binding ==========
@@ -1522,7 +1480,11 @@ function makeValueEditable(valId, sliderId, suffix) {
     valEl.appendChild(input);
     input.focus();
     input.select();
+    // cancelled 标志：Esc 取消后，输入框被移出 DOM 会触发 blur，
+    // blur 里的 commit 必须跳过，否则 Esc 会变成"确认提交"
+    let cancelled = false;
     const commit = () => {
+      if (cancelled) return;
       let v = parseInt(input.value);
       if (isNaN(v)) { valEl.textContent = cur + (suffix || 'px'); return; }
       // 限制在滑块范围内
@@ -1533,11 +1495,14 @@ function makeValueEditable(valId, sliderId, suffix) {
       saveSettings();
       render();
     };
-    const cancel = () => { valEl.textContent = cur + (suffix || 'px'); };
+    const cancel = () => {
+      cancelled = true;
+      valEl.textContent = cur + (suffix || 'px');
+    };
     input.addEventListener('blur', commit);
     input.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
-      else if (e.key === 'Escape') { e.preventDefault(); valEl.textContent = cur + (suffix || 'px'); }
+      else if (e.key === 'Escape') { e.preventDefault(); cancel(); }
     });
   });
 }
@@ -1559,6 +1524,12 @@ function toggleIndependentBorder() {
     document.getElementById('outerWidthV').value = state.outerWidth;
     document.getElementById('outerWidthHVal').textContent = state.outerWidth + 'px';
     document.getElementById('outerWidthVVal').textContent = state.outerWidth + 'px';
+  } else {
+    // 关闭时：把上下/左右的均值回写到统一边框，
+    // 否则用户在独立模式下调的数值会被旧 outerWidth 覆盖，视觉上"白调了"
+    state.outerWidth = Math.round((state.outerWidthH + state.outerWidthV) / 2);
+    document.getElementById('outerWidth').value = state.outerWidth;
+    document.getElementById('outerWidthVal').textContent = state.outerWidth + 'px';
   }
   const toggle = document.getElementById('independentBorderToggle');
   toggle.classList.toggle('on', state.independentBorder);
@@ -1660,7 +1631,6 @@ document.getElementById('presets').addEventListener('click', (e) => {
   state.activePreset = key;
   state.outerWidth = p.outerWidth;
   state.outerColor = p.outerColor;
-  state.outerRadius = p.outerRadius;
   state.innerWidth = p.innerWidth;
   state.innerColor = p.innerColor;
   state.innerPadding = p.innerPadding;
@@ -1883,7 +1853,7 @@ document.querySelectorAll('#exportSection [data-res]').forEach(btn => {
     document.querySelectorAll('#exportSection [data-res]').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     const hint = document.getElementById('resHint');
-    if (hint) hint.textContent = state.exportRes === 'orig' ? '按原图尺寸' : `长边 ${state.exportRes}px`;
+    if (hint) hint.textContent = state.exportRes === 'orig' ? '按原图尺寸' : `照片长边 ${state.exportRes}px`;
     saveSettings();
   });
 });
@@ -1899,16 +1869,20 @@ function exportImage() {
   const filename = `FIXER_border_${ts}.${ext}`;
   const q = state.quality / 100;
 
-  // —— 计算目标尺寸（支持 2K / 4K 按长边缩放）——
+  // —— 计算目标尺寸（2K / 4K 按"照片本体"长边缩放，不含阴影透明边距）——
   const srcW = previewCanvas.width;
   const srcH = previewCanvas.height;
   let targetW = srcW, targetH = srcH;
   if (state.exportRes && state.exportRes !== 'orig') {
     const targetLong = parseInt(state.exportRes, 10);
-    const longSide = Math.max(srcW, srcH);
-    const scale = targetLong / longSide;
+    const photoLong = Math.max(state.image.width, state.image.height);
+    const scale = targetLong / photoLong;
     targetW = Math.max(1, Math.round(srcW * scale));
     targetH = Math.max(1, Math.round(srcH * scale));
+    // 原图比目标小 → 插值放大，画质会下降，提前告知
+    if (targetLong > photoLong) {
+      showToast(`原图长边 ${photoLong}px 小于 ${targetLong}px，将插值放大，画质会略降`);
+    }
   }
 
   // —— 创建独立的导出 canvas（不污染预览）——
@@ -1919,10 +1893,10 @@ function exportImage() {
   ectx.imageSmoothingEnabled = true;
   ectx.imageSmoothingQuality = 'high';
 
-  // —— 关键修复：JPEG / WebP 不支持透明通道 ——
+  // —— 关键：JPEG 不支持透明通道，先填白底 ——
   // 预览 canvas 的阴影 padding 区域是透明的，直接导出 JPEG 会变成黑边。
-  // 这里先填充白色背景，消除黑边。PNG 保持透明不受影响。
-  if (state.format === 'jpeg' || state.format === 'webp') {
+  // WebP 本身支持透明（保留阴影透明边距），PNG 同样保持透明。
+  if (state.format === 'jpeg') {
     ectx.fillStyle = '#ffffff';
     ectx.fillRect(0, 0, targetW, targetH);
   }
@@ -1932,13 +1906,24 @@ function exportImage() {
 
   exportCanvas.toBlob(blob => {
     if (!blob) { showToast('导出失败'); return; }
+    // Safari 等浏览器不支持 WebP 编码时会静默回退成 PNG 数据，
+    // 按实际格式命名文件，避免出现"内容是 PNG、扩展名却是 .webp"的假文件
+    let realExt = ext;
+    if (blob.type === 'image/png') realExt = 'png';
+    else if (blob.type === 'image/jpeg') realExt = 'jpg';
+    else if (blob.type === 'image/webp') realExt = 'webp';
+    let outName = filename;
+    if (realExt !== ext) {
+      outName = filename.slice(0, -(ext.length + 1)) + '.' + realExt;
+      showToast('当前浏览器不支持 WebP 编码，已自动改为 PNG 格式');
+    }
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.download = filename;
+    link.download = outName;
     link.href = url;
     link.click();
     setTimeout(() => URL.revokeObjectURL(url), 2000);
-    showToast(`导出完成 ✓ ${targetW}×${targetH}px · ${filename}`);
+    if (realExt === ext) showToast(`导出完成 ✓ ${targetW}×${targetH}px · ${outName}`);
   }, mime, (state.format === 'png') ? undefined : q);
 }
 
@@ -2063,7 +2048,7 @@ function syncAllUIFromState() {
     b.classList.toggle('active', b.dataset.res === resVal);
   });
   const resHint = document.getElementById('resHint');
-  if (resHint) resHint.textContent = resVal === 'orig' ? '按原图尺寸' : `长边 ${resVal}px`;
+  if (resHint) resHint.textContent = resVal === 'orig' ? '按原图尺寸' : `照片长边 ${resVal}px`;
   // 背景
   panelRight.style.background = state.bgColor;
 }
